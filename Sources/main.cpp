@@ -10,7 +10,9 @@ int main(int argc, char *argv[])
         graph.performDFS();
         graph.performBFS();
 
-        graph.printGraph();
+        graph.performTopologicalSort();
+
+        // graph.printGraph();
     }
     return 0;
 }

@@ -41,7 +41,7 @@ void Graph::performBFS()
         {
             if (visitedBFS[elem] == false)
             {
-                this->BFSTree.push_back({currentNode, elem});
+                this->BFSTree.push_back({currentNode + 1, elem + 1});
                 visitedBFS[elem] = true;
                 nodesToVisit.push(elem);
             }
@@ -53,6 +53,18 @@ void Graph::performBFS()
 
 void Graph::performTopologicalSort()
 {
+    for (size_t i = 0; i < this->n; ++i)
+    {
+        if (this->topologicalState[i] == State::NotVisited)
+        {
+            if (this->topologicalVisit(i) == false)
+            {
+                this->containsCycle = true;
+                return;
+            }
+        }
+    }
+    this->containsCycle = false;
 }
 
 void Graph::printGraph() const
@@ -69,13 +81,13 @@ void Graph::printGraph() const
     std::cout << "DFS:\n";
     for (const auto &elem : this->DFS)
     {
-        std::cout << elem << " ";
+        std::cout << elem - 1 << " ";
     }
     std::cout << std::endl;
     std::cout << "DFS tree:\n";
     for (const auto &[e1, e2] : this->DFSTree)
     {
-        std::cout << "(" << e1 + 1 << ", " << e2 + 1 << ") ";
+        std::cout << "(" << e1 << ", " << e2 << ") ";
     }
     std::cout << std::endl;
     std::cout << std::endl;
@@ -89,13 +101,55 @@ void Graph::printGraph() const
     std::cout << "BFS tree:\n";
     for (const auto &[e1, e2] : this->BFSTree)
     {
-        std::cout << "(" << e1 + 1 << ", " << e2 + 1 << ") ";
+        std::cout << "(" << e1 << ", " << e2 << ") ";
     }
+
+    std::cout << std::endl;
+    if (this->containsCycle)
+    {
+        std::cout << "Graph contains cycle";
+    }
+    else
+    {
+        std::cout << "Graph does not contain cycle";
+    }
+    std::cout << std::endl;
+
+    std::cout << "Topological sort:\n";
+    for (auto it = this->topologicalOrder.rbegin(); it != this->topologicalOrder.rend(); it++)
+    {
+        std::cout << *it << " ";
+    }
+    std::cout << std::endl;
 }
 
 std::vector<std::vector<int>> Graph::getAdjacencyList()
 {
     return this->adjacencyList;
+}
+
+bool Graph::topologicalVisit(const int &node)
+{
+    if (this->topologicalState[node] == State::PartiallyVisited)
+    {
+        return false;
+    }
+    else if (this->topologicalState[node] == State::FullyVisited)
+    {
+        return true;
+    }
+
+    this->topologicalState[node] = State::PartiallyVisited;
+    for (const auto &elem : this->adjacencyList[node])
+    {
+        if (topologicalVisit(elem) == false)
+        {
+            return false;
+        }
+    }
+    this->topologicalState[node] = State::FullyVisited;
+    this->topologicalOrder.push_back(node + 1);
+    return true;
 }
 
 void Graph::DFSHelper(const int &currentNode)
@@ -107,7 +161,7 @@ void Graph::DFSHelper(const int &currentNode)
     {
         if (visitedDFS[elem] == false)
         {
-            this->DFSTree.push_back({currentNode, elem});
+            this->DFSTree.push_back({currentNode + 1, elem + 1});
             DFSHelper(elem);
         }
     }
@@ -121,6 +175,7 @@ void Graph::reset()
     this->performedDFS = false;
     this->performedBFS = false;
     this->isDirected = false;
+    this->containsCycle = false;
     this->adjacencyList.clear();
     this->visitedDFS.clear();
     this->visitedBFS.clear();
@@ -162,9 +217,10 @@ bool Graph::loadGraph(const std::string &filepath)
         file >> n >> m;
         this->n = n;
         this->m = m;
-        this->adjacencyList.resize(n);     // reserves space for nodes in adjacency list
-        this->visitedDFS.resize(n, false); // reserves space for nodes visited in DFS
-        this->visitedBFS.resize(n, false); // reserves space for nodes visited in BFS
+        this->adjacencyList.resize(n);                       // reserves space for nodes in adjacency list
+        this->visitedDFS.resize(n, false);                   // reserves space for nodes visited in DFS
+        this->visitedBFS.resize(n, false);                   // reserves space for nodes visited in BFS
+        this->topologicalState.resize(n, State::NotVisited); // reserves space for nodes in topological sort
 
         for (size_t i = 0; i < m; ++i)
         {
