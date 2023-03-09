@@ -1,4 +1,19 @@
 # Algorytmy-optymalizacji-dyskretnej
-To run: 
+Repozytorium zawiera programy napisane na przedmiot **Algorytmy optymalizacji dyskretnej 2022/2023**
+
+## Użycie
+
+Aby skompilować projekt należy użyć komendy:
+```bash
 ./run.sh
-./aod <input_file>
+```
+
+Aby uruchomić projekt należy użyć komendy:
+```bash
+./AOD <plik_wejściowy>
+```
+
+Aby wyczyścić projekt należy użyć komendy:
+```bash
+./clean.sh
+```
