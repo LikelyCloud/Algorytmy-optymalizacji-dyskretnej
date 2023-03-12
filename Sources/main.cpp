@@ -7,10 +7,26 @@ int main(int argc, char *argv[])
         std::string filepath(argv[1]);
 
         Graph graph(filepath);
-        graph.performDFS();
-        graph.performBFS();
+        // graph.performTarjan();
+        auto [a, b, c] = graph.bipartite();
+        std::cout << a << std::endl;
 
-        graph.performTopologicalSort();
+        std::cout << "Set 1:\n";
+        for (const auto &elem : b)
+        {
+            std::cout << elem << " ";
+        }
+
+        std::cout << "\n\nSet 3:\n";
+        for (const auto &elem : c)
+        {
+            std::cout << elem << " ";
+        }
+
+        //  graph.performDFS();
+        //  graph.performBFS();
+
+        // graph.performTopologicalSort();
 
         // graph.printGraph();
     }

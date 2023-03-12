@@ -18,9 +18,14 @@ Graph::~Graph()
 
 void Graph::performDFS()
 {
-    int currentNode = 0;
+    for (size_t i = 0; i < this->n; ++i)
+    {
+        if (visitedDFS[i] == false)
+        {
+            DFSHelper(i);
+        }
+    }
 
-    DFSHelper(currentNode);
     this->performedDFS = true;
 }
 
@@ -30,6 +35,7 @@ void Graph::performBFS()
     int currentNode;
 
     nodesToVisit.push(0);
+    visitedBFS[0] = true;
 
     while (!nodesToVisit.empty())
     {
@@ -123,6 +129,98 @@ void Graph::printGraph() const
     std::cout << std::endl;
 }
 
+void Graph::performTarjan()
+{
+    std::vector<int> tarjanNodeId;
+    std::vector<int> tarjanNodeLow;
+    std::vector<bool> tarjanNodeOnStack;
+    std::stack<int> tarjanNodeStack;
+    std::map<int, std::vector<int>> stronglyConnectedComponents;
+
+    int nodeIdCounter = 0;
+    int sccCounter = 0;
+
+    tarjanNodeId.resize(this->n, -1);         // mark all nodes as unvisited
+    tarjanNodeLow.resize(this->n, 0);         // set 0 as default node low (must and will be changed)
+    tarjanNodeOnStack.resize(this->n, false); // no nodes on the stack at the beginning
+
+    for (size_t node = 0; node < this->n; ++node)
+    {
+        if (tarjanNodeId[node] == -1)
+        {
+            visitTarjan(node, nodeIdCounter, sccCounter, tarjanNodeId, tarjanNodeLow, tarjanNodeOnStack, tarjanNodeStack);
+        }
+    }
+
+    for (size_t node = 0; node < this->n; ++node)
+    {
+        stronglyConnectedComponents[tarjanNodeLow[node]].push_back(node);
+    }
+
+    for (const auto &[key, value] : stronglyConnectedComponents)
+    {
+        std::cout << key << std::endl;
+        for (const auto &elem : value)
+        {
+            std::cout << elem << " ";
+        }
+        std::cout << std::endl;
+        std::cout << std::endl;
+    }
+}
+
+std::tuple<bool, std::vector<int>, std::vector<int>> Graph::bipartite()
+{
+    std::vector<Color> nodeColor;
+    std::queue<int> nodesToVisit;
+    std::vector<int> nodeSetOne;
+    std::vector<int> nodeSetTwo;
+    int currentNode;
+
+    nodeColor.resize(this->n, Color::Uncolored);
+
+    for (size_t i = 0; i < this->n; ++i)
+    {
+        if (nodeColor[i] == Color::Uncolored)
+        {
+            nodeColor[i] = Color::Blue;
+            nodesToVisit.push(i);
+            nodeSetOne.push_back(i);
+
+            while (!nodesToVisit.empty())
+            {
+                currentNode = nodesToVisit.front();
+                nodesToVisit.pop();
+
+                for (const auto &elem : this->adjacencyList[currentNode])
+                {
+                    if (nodeColor[elem] == nodeColor[currentNode])
+                    {
+                        return {false, {}, {}};
+                    }
+                    else if (nodeColor[elem] == Color::Uncolored)
+                    {
+                        nodesToVisit.push(elem);
+                        nodeColor[elem] = this->alterateColor(nodeColor[currentNode]);
+                        switch (nodeColor[elem])
+                        {
+                        case Color::Blue:
+                            nodeSetOne.push_back(elem);
+                            break;
+                        case Color::Red:
+                            nodeSetTwo.push_back(elem);
+                        case Color::Uncolored: // should never happen !!!
+                            break;
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    return {true, nodeSetOne, nodeSetTwo};
+}
+
 std::vector<std::vector<int>> Graph::getAdjacencyList()
 {
     return this->adjacencyList;
@@ -165,6 +263,7 @@ void Graph::DFSHelper(const int &currentNode)
             DFSHelper(elem);
         }
     }
+    // DFS.push_back(currentNode + 1); (kiedy uznawać wierzchołek za odwiedzony???)
 }
 
 void Graph::reset()
@@ -213,6 +312,8 @@ bool Graph::loadGraph(const std::string &filepath)
             std::cerr << "Unknown flag!!!";
             loaded = false;
         }
+        // ################################ DELETE
+        this->isDirected = false;
 
         file >> n >> m;
         this->n = n;
@@ -240,4 +341,56 @@ bool Graph::loadGraph(const std::string &filepath)
     file.close();
 
     return loaded;
+}
+
+Graph::Color Graph::alterateColor(const Color &color)
+{
+    switch (color)
+    {
+    case Color::Red:
+        return Color::Blue;
+    case Color::Blue:
+        return Color::Red;
+    case Color::Uncolored: // should not happen !!!
+        return Color::Uncolored;
+    }
+}
+
+void Graph::visitTarjan(const int &node, int &nodeIdCounter, int &sccCounter, std::vector<int> &tarjanNodeId, std::vector<int> &tarjanNodeLow, std::vector<bool> &tarjanNodeOnStack, std::stack<int> &tarjanNodeStack)
+{
+    int stackTop;
+
+    tarjanNodeStack.push(node);
+    tarjanNodeOnStack[node] = true;
+    tarjanNodeId[node] = nodeIdCounter;
+    tarjanNodeLow[node] = nodeIdCounter;
+    nodeIdCounter++;
+
+    for (const auto &neighbour : this->adjacencyList[node])
+    {
+        if (tarjanNodeId[neighbour] == -1)
+        {
+            visitTarjan(neighbour, nodeIdCounter, sccCounter, tarjanNodeId, tarjanNodeLow, tarjanNodeOnStack, tarjanNodeStack);
+        }
+        if (tarjanNodeOnStack[neighbour])
+        {
+            tarjanNodeLow[node] = std::min(tarjanNodeLow[node], tarjanNodeLow[neighbour]);
+        }
+    }
+
+    if (tarjanNodeId[node] == tarjanNodeLow[node])
+    {
+        while (!tarjanNodeStack.empty())
+        {
+            stackTop = tarjanNodeStack.top();
+            tarjanNodeStack.pop();
+            tarjanNodeOnStack[stackTop] = false;
+            tarjanNodeLow[stackTop] = tarjanNodeId[node];
+            if (stackTop == node)
+            {
+                break;
+            }
+        }
+        ++sccCounter;
+    }
 }
