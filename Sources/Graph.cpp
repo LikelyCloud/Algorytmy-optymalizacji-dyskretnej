@@ -18,11 +18,14 @@ Graph::~Graph()
 
 void Graph::performDFS()
 {
+    std::vector<bool> visitedDFS;
+    visitedDFS.resize(this->n, false); // reserves space for nodes visited in DFS
+
     for (size_t i = 0; i < this->n; ++i)
     {
         if (visitedDFS[i] == false)
         {
-            DFSHelper(i);
+            DFSHelper(visitedDFS, i);
         }
     }
 
@@ -32,24 +35,33 @@ void Graph::performDFS()
 void Graph::performBFS()
 {
     std::queue<int> nodesToVisit;
+    std::vector<bool> visitedBFS;
     int currentNode;
 
-    nodesToVisit.push(0);
-    visitedBFS[0] = true;
+    visitedBFS.resize(this->n, false); // reserves space for nodes visited in BFS
 
-    while (!nodesToVisit.empty())
+    for (size_t i = 0; i < this->n; ++i)
     {
-        currentNode = nodesToVisit.front();
-        BFS.push_back(currentNode + 1);
-        nodesToVisit.pop();
-
-        for (const auto &elem : this->adjacencyList[currentNode])
+        if (visitedBFS[i] == false)
         {
-            if (visitedBFS[elem] == false)
+            nodesToVisit.push(i);
+            visitedBFS[i] = true;
+
+            while (!nodesToVisit.empty())
             {
-                this->BFSTree.push_back({currentNode + 1, elem + 1});
-                visitedBFS[elem] = true;
-                nodesToVisit.push(elem);
+                currentNode = nodesToVisit.front();
+                BFS.push_back(currentNode + 1);
+                nodesToVisit.pop();
+
+                for (const auto &elem : this->adjacencyList[currentNode])
+                {
+                    if (visitedBFS[elem] == false)
+                    {
+                        this->BFSTree.push_back({currentNode + 1, elem + 1});
+                        visitedBFS[elem] = true;
+                        nodesToVisit.push(elem);
+                    }
+                }
             }
         }
     }
@@ -59,11 +71,14 @@ void Graph::performBFS()
 
 void Graph::performTopologicalSort()
 {
+    std::vector<State> topologicalState;
+    topologicalState.resize(this->n, Graph::State::NotVisited);
+
     for (size_t i = 0; i < this->n; ++i)
     {
-        if (this->topologicalState[i] == State::NotVisited)
+        if (topologicalState[i] == State::NotVisited)
         {
-            if (this->topologicalVisit(i) == false)
+            if (topologicalVisit(topologicalState, i) == false)
             {
                 this->containsCycle = true;
                 return;
@@ -118,15 +133,65 @@ void Graph::printGraph() const
     else
     {
         std::cout << "Graph does not contain cycle";
-    }
-    std::cout << std::endl;
 
-    std::cout << "Topological sort:\n";
-    for (auto it = this->topologicalOrder.rbegin(); it != this->topologicalOrder.rend(); it++)
-    {
-        std::cout << *it << " ";
+        std::cout << std::endl;
+
+        std::cout << "Topological sort:\n";
+        for (auto it = this->topologicalOrder.rbegin(); it != this->topologicalOrder.rend(); it++)
+        {
+            std::cout << *it << " ";
+        }
+        std::cout << std::endl;
     }
-    std::cout << std::endl;
+}
+
+void Graph::performKosaraju()
+{
+    std::vector<std::vector<int>> transposedGraph; // adjacency list of transposed original graph
+    std::stack<int> visitedNodeStack;
+    std::vector<bool> visitedNodes;
+    std::vector<std::vector<int>> stronglyConnectedComponents;
+    std::vector<int> currentComponent;
+    int sscCounter = 0;
+    int topNode;
+
+    transposedGraph.resize(this->n);
+    visitedNodes.resize(this->n, false);
+
+    // transposes original graph
+    for (size_t i = 0; i < this->n; ++i)
+    {
+        for (const auto &elem : this->adjacencyList[i])
+        {
+            transposedGraph[elem].push_back(i);
+        }
+    }
+
+    for (size_t i = 0; i < this->n; ++i)
+    {
+        if (visitedNodes[i] == false)
+        {
+            KosarajuDFS(visitedNodes, visitedNodeStack, i);
+        }
+    }
+
+    // visitedNodes.resize(this->n, false);
+    std::fill(visitedNodes.begin(), visitedNodes.end(), false);
+
+    while (!visitedNodeStack.empty())
+    {
+        topNode = visitedNodeStack.top();
+        visitedNodeStack.pop();
+
+        if (visitedNodes[topNode] == false)
+        {
+            ++sscCounter;
+            currentComponent = {};
+            KosarajuFindSCC(transposedGraph, visitedNodes, currentComponent, topNode);
+            stronglyConnectedComponents.push_back(currentComponent);
+        }
+    }
+    std::cout << "scc: " << sscCounter;
 }
 
 void Graph::performTarjan()
@@ -157,7 +222,8 @@ void Graph::performTarjan()
         stronglyConnectedComponents[tarjanNodeLow[node]].push_back(node);
     }
 
-    for (const auto &[key, value] : stronglyConnectedComponents)
+    std::cout << "SCC: " << sccCounter << std::endl;
+    /*for (const auto &[key, value] : stronglyConnectedComponents)
     {
         std::cout << key << std::endl;
         for (const auto &elem : value)
@@ -166,7 +232,8 @@ void Graph::performTarjan()
         }
         std::cout << std::endl;
         std::cout << std::endl;
-    }
+        std::cout << value.size() << " ";
+    }*/
 }
 
 std::tuple<bool, std::vector<int>, std::vector<int>> Graph::bipartite()
@@ -226,31 +293,31 @@ std::vector<std::vector<int>> Graph::getAdjacencyList()
     return this->adjacencyList;
 }
 
-bool Graph::topologicalVisit(const int &node)
+bool Graph::topologicalVisit(std::vector<State> &topologicalState, const int &node)
 {
-    if (this->topologicalState[node] == State::PartiallyVisited)
+    if (topologicalState[node] == State::PartiallyVisited)
     {
         return false;
     }
-    else if (this->topologicalState[node] == State::FullyVisited)
+    else if (topologicalState[node] == State::FullyVisited)
     {
         return true;
     }
 
-    this->topologicalState[node] = State::PartiallyVisited;
+    topologicalState[node] = State::PartiallyVisited;
     for (const auto &elem : this->adjacencyList[node])
     {
-        if (topologicalVisit(elem) == false)
+        if (topologicalVisit(topologicalState, elem) == false)
         {
             return false;
         }
     }
-    this->topologicalState[node] = State::FullyVisited;
+    topologicalState[node] = State::FullyVisited;
     this->topologicalOrder.push_back(node + 1);
     return true;
 }
 
-void Graph::DFSHelper(const int &currentNode)
+void Graph::DFSHelper(std::vector<bool> &visitedDFS, const int &currentNode)
 {
     visitedDFS[currentNode] = true;
     DFS.push_back(currentNode + 1);
@@ -260,7 +327,7 @@ void Graph::DFSHelper(const int &currentNode)
         if (visitedDFS[elem] == false)
         {
             this->DFSTree.push_back({currentNode + 1, elem + 1});
-            DFSHelper(elem);
+            DFSHelper(visitedDFS, elem);
         }
     }
     // DFS.push_back(currentNode + 1); (kiedy uznawać wierzchołek za odwiedzony???)
@@ -276,8 +343,6 @@ void Graph::reset()
     this->isDirected = false;
     this->containsCycle = false;
     this->adjacencyList.clear();
-    this->visitedDFS.clear();
-    this->visitedBFS.clear();
     this->DFS.clear();
     this->DFSTree.clear();
     this->BFS.clear();
@@ -318,10 +383,7 @@ bool Graph::loadGraph(const std::string &filepath)
         file >> n >> m;
         this->n = n;
         this->m = m;
-        this->adjacencyList.resize(n);                       // reserves space for nodes in adjacency list
-        this->visitedDFS.resize(n, false);                   // reserves space for nodes visited in DFS
-        this->visitedBFS.resize(n, false);                   // reserves space for nodes visited in BFS
-        this->topologicalState.resize(n, State::NotVisited); // reserves space for nodes in topological sort
+        this->adjacencyList.resize(n); // reserves space for nodes in adjacency list
 
         for (size_t i = 0; i < m; ++i)
         {
@@ -392,5 +454,33 @@ void Graph::visitTarjan(const int &node, int &nodeIdCounter, int &sccCounter, st
             }
         }
         ++sccCounter;
+    }
+}
+
+void Graph::KosarajuDFS(std::vector<bool> &visited, std::stack<int> &visitedNodeStack, const int node)
+{
+    visited[node] = true;
+
+    for (const auto &elem : this->adjacencyList[node])
+    {
+        if (visited[elem] == false)
+        {
+            KosarajuDFS(visited, visitedNodeStack, elem);
+        }
+    }
+    visitedNodeStack.push(node);
+}
+
+void Graph::KosarajuFindSCC(std::vector<std::vector<int>> &transposedGraph, std::vector<bool> &visited, std::vector<int> &component, const int node)
+{
+    visited[node] = true;
+
+    for (const auto &elem : transposedGraph[node])
+    {
+        if (visited[elem] == false)
+        {
+            component.push_back(elem);
+            KosarajuFindSCC(transposedGraph, visited, component, elem);
+        }
     }
 }

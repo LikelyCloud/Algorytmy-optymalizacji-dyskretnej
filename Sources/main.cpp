@@ -7,7 +7,11 @@ int main(int argc, char *argv[])
         std::string filepath(argv[1]);
 
         Graph graph(filepath);
-        graph.performTarjan();
+        // graph.performTarjan();
+        graph.performKosaraju();
+        // graph.performBFS();
+        // graph.performTopologicalSort();
+        // graph.printGraph();
         /*auto [a, b, c] = graph.bipartite();
         std::cout << a << std::endl;
 
