@@ -7,8 +7,8 @@ int main(int argc, char *argv[])
         std::string filepath(argv[1]);
 
         Graph graph(filepath);
-        // graph.performTarjan();
-        auto [a, b, c] = graph.bipartite();
+        graph.performTarjan();
+        /*auto [a, b, c] = graph.bipartite();
         std::cout << a << std::endl;
 
         std::cout << "Set 1:\n";
@@ -21,7 +21,7 @@ int main(int argc, char *argv[])
         for (const auto &elem : c)
         {
             std::cout << elem << " ";
-        }
+        }*/
 
         //  graph.performDFS();
         //  graph.performBFS();

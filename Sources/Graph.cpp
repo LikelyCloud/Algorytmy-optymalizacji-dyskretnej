@@ -313,7 +313,7 @@ bool Graph::loadGraph(const std::string &filepath)
             loaded = false;
         }
         // ################################ DELETE
-        this->isDirected = false;
+        // this->isDirected = false;
 
         file >> n >> m;
         this->n = n;
