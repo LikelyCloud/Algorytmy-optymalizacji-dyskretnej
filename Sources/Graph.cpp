@@ -1,5 +1,7 @@
 #include <Graph.hpp>
 
+Graph::Graph() {}
+
 Graph::Graph(const std::string &filepath)
 {
     bool isLoaded;
@@ -102,7 +104,7 @@ void Graph::printGraph() const
     std::cout << "DFS:\n";
     for (const auto &elem : this->DFS)
     {
-        std::cout << elem - 1 << " ";
+        std::cout << elem << " ";
     }
     std::cout << std::endl;
     std::cout << "DFS tree:\n";
@@ -136,12 +138,15 @@ void Graph::printGraph() const
 
         std::cout << std::endl;
 
-        std::cout << "Topological sort:\n";
-        for (auto it = this->topologicalOrder.rbegin(); it != this->topologicalOrder.rend(); it++)
+        if (this->n <= 200)
         {
-            std::cout << *it << " ";
+            std::cout << "Topological sort:\n";
+            for (auto it = this->topologicalOrder.rbegin(); it != this->topologicalOrder.rend(); it++)
+            {
+                std::cout << *it << " ";
+            }
+            std::cout << std::endl;
         }
-        std::cout << std::endl;
     }
 }
 
@@ -175,7 +180,6 @@ void Graph::performKosaraju()
         }
     }
 
-    // visitedNodes.resize(this->n, false);
     std::fill(visitedNodes.begin(), visitedNodes.end(), false);
 
     while (!visitedNodeStack.empty())
@@ -186,12 +190,29 @@ void Graph::performKosaraju()
         if (visitedNodes[topNode] == false)
         {
             ++sscCounter;
-            currentComponent = {};
+            currentComponent = {topNode};
             KosarajuFindSCC(transposedGraph, visitedNodes, currentComponent, topNode);
             stronglyConnectedComponents.push_back(currentComponent);
         }
     }
-    std::cout << "scc: " << sscCounter;
+    std::cout << "Kosaraju-scc: " << sscCounter << std::endl;
+    for (const auto &elem : stronglyConnectedComponents)
+    {
+        std::cout << elem.size() << " ";
+    }
+    std::cout << std::endl;
+    if (this->n <= 200)
+    {
+        for (const auto &elem : stronglyConnectedComponents)
+        {
+            for (const auto val : elem)
+            {
+                std::cout << val + 1 << " ";
+            }
+            std::cout << std::endl
+                      << std::endl;
+        }
+    }
 }
 
 void Graph::performTarjan()
@@ -222,17 +243,24 @@ void Graph::performTarjan()
         stronglyConnectedComponents[tarjanNodeLow[node]].push_back(node);
     }
 
-    std::cout << "SCC: " << sccCounter << std::endl;
+    std::cout << "Tarjan-scc: " << sccCounter << std::endl;
+    for (const auto &[key, value] : stronglyConnectedComponents)
+    {
+        std::cout << value.size() << " ";
+    }
+    std::cout << std::endl;
+
     /*for (const auto &[key, value] : stronglyConnectedComponents)
     {
-        std::cout << key << std::endl;
+        std::cout << "Key:" << key << std::endl;
         for (const auto &elem : value)
         {
             std::cout << elem << " ";
         }
         std::cout << std::endl;
+        std::cout << "Value:" << value.size() << " ";
         std::cout << std::endl;
-        std::cout << value.size() << " ";
+        std::cout << std::endl;
     }*/
 }
 
@@ -286,6 +314,11 @@ std::tuple<bool, std::vector<int>, std::vector<int>> Graph::bipartite()
     }
 
     return {true, nodeSetOne, nodeSetTwo};
+}
+
+int Graph::getSize() const
+{
+    return this->n;
 }
 
 std::vector<std::vector<int>> Graph::getAdjacencyList()
@@ -349,7 +382,47 @@ void Graph::reset()
     this->BFSTree.clear();
 }
 
-bool Graph::loadGraph(const std::string &filepath)
+bool Graph::loadGraph()
+{
+    char isDirected;
+    int n, m;
+    int e1, e2;
+    bool loaded = true;
+
+    std::cin >> isDirected;
+    switch (isDirected)
+    {
+    case 'U':
+        this->isDirected = false;
+        break;
+    case 'D':
+        this->isDirected = true;
+        break;
+    default:
+        std::cerr << "Unknown flag!!!";
+        loaded = false;
+    }
+    // ################################ DELETE
+    this->isDirected = false;
+
+    std::cin >> n >> m;
+    this->n = n;
+    this->m = m;
+    this->adjacencyList.resize(n); // reserves space for nodes in adjacency list
+
+    for (size_t i = 0; i < m; ++i)
+    {
+        std::cin >> e1 >> e2;
+        this->adjacencyList[e1 - 1].push_back(e2 - 1);
+        if (!this->isDirected)
+        {
+            this->adjacencyList[e2 - 1].push_back(e1 - 1);
+        }
+    }
+    return loaded;
+}
+
+bool Graph::loadGraph(const std::string filepath)
 {
     std::ifstream file;
     std::string line;
@@ -418,7 +491,7 @@ Graph::Color Graph::alterateColor(const Color &color)
     }
 }
 
-void Graph::visitTarjan(const int &node, int &nodeIdCounter, int &sccCounter, std::vector<int> &tarjanNodeId, std::vector<int> &tarjanNodeLow, std::vector<bool> &tarjanNodeOnStack, std::stack<int> &tarjanNodeStack)
+void Graph::visitTarjan(const int node, int nodeIdCounter, int &sccCounter, std::vector<int> &tarjanNodeId, std::vector<int> &tarjanNodeLow, std::vector<bool> &tarjanNodeOnStack, std::stack<int> &tarjanNodeStack)
 {
     int stackTop;
 
@@ -481,6 +554,66 @@ void Graph::KosarajuFindSCC(std::vector<std::vector<int>> &transposedGraph, std:
         {
             component.push_back(elem);
             KosarajuFindSCC(transposedGraph, visited, component, elem);
+        }
+    }
+}
+
+void Graph::KosarajuDFSIter(std::vector<bool> &visited, std::stack<int> &visitedNodeStack, const int node)
+{
+    std::vector<bool> onStack(this->n, false); // onStack[i] true if i is on visitedNodeStack
+    std::vector<int> stackSize(this->n, -1);   // stackSize[i] == size of stack after popping i
+
+    std::stack<int> dfsStack;
+    int stackTop;
+
+    dfsStack.push(node);
+
+    while (!dfsStack.empty())
+    {
+        stackTop = dfsStack.top();
+        dfsStack.pop();
+        stackSize[stackTop] = dfsStack.size();
+
+        visited[stackTop] = true;
+        for (const auto elem : this->adjacencyList[stackTop])
+        {
+            if (visited[elem] == false)
+            {
+                dfsStack.push(elem);
+            }
+        }
+
+        /*for (size_t i = 0; i < this->n; ++i)
+        {
+            if (!onStack[i] && stackSize[i] == dfsStack.size())
+            {
+                onStack[i] = true;
+                visitedNodeStack.push(i);
+            }
+        }*/
+        visitedNodeStack.push(stackTop);
+    }
+}
+
+void Graph::KosarajuFindSCCIter(std::vector<std::vector<int>> &transposedGraph, std::vector<bool> &visited, std::vector<int> &component, const int node)
+{
+    std::stack<int> dfsStack;
+    int stackTop;
+
+    dfsStack.push(node);
+
+    while (!dfsStack.empty())
+    {
+        stackTop = dfsStack.top();
+        dfsStack.pop();
+        visited[stackTop] = true;
+        for (const auto elem : transposedGraph[stackTop])
+        {
+            if (visited[elem] == false)
+            {
+                component.push_back(elem);
+                dfsStack.push(elem);
+            }
         }
     }
 }

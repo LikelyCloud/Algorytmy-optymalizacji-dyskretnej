@@ -8,13 +8,17 @@
 #include <fstream>
 #include <iostream>
 #include <algorithm>
+#include <chrono>
 
 class Graph
 {
 public:
+    Graph();
     Graph(const std::string &filepath);
     ~Graph();
 
+    bool loadGraph();                                                 // loads graph instance from command line
+    bool loadGraph(const std::string filepath);                       // loads graph instance from file
     std::vector<std::vector<int>> getAdjacencyList();                 // adjacency list of graph nodes
     void performDFS();                                                // preforms DFS algorithm on the graph
     void performBFS();                                                // preforms BFS algorithm on the graph
@@ -23,6 +27,7 @@ public:
     void performKosaraju();                                           // performs Kosaraju algorithm to find SCC
     void performTarjan();                                             // performs Tarjan's algorithm to find SCC
     std::tuple<bool, std::vector<int>, std::vector<int>> bipartite(); // checks if graph is bipartite and if so returns two sets of nodes (assuming graph is not directed)
+    int getSize() const;
 
 private:
     enum class State
@@ -55,13 +60,15 @@ private:
     bool topologicalVisit(std::vector<Graph::State> &topologicalState, const int &node); // visits one node in topological search
     void DFSHelper(std::vector<bool> &visited, const int &node);                         // helper function in DFS algorithm
     void reset();                                                                        // clears all data about graph instance;
-    bool loadGraph(const std::string &filepath);                                         // loads graph instance from file
     Color alterateColor(const Color &color);                                             // alterateColor(red) = blue | alterateColor(blue) = red
 
-    void visitTarjan(const int &node, int &nodeIdCounter, int &sccCounter, std::vector<int> &id, std::vector<int> &low, std::vector<bool> &onStack, std::stack<int> &nodeStack); // DFS visit method modified for Tarjan's SCC algorithm
+    void visitTarjan(const int node, int nodeIdCounter, int &sccCounter, std::vector<int> &id, std::vector<int> &low, std::vector<bool> &onStack, std::stack<int> &nodeStack); // DFS visit method modified for Tarjan's SCC algorithm
 
     void KosarajuDFS(std::vector<bool> &visited, std::stack<int> &visitedNodeStack, const int node);
     void KosarajuFindSCC(std::vector<std::vector<int>> &transposedGraph, std::vector<bool> &visited, std::vector<int> &component, const int node);
+
+    void KosarajuDFSIter(std::vector<bool> &visited, std::stack<int> &visitedNodeStack, const int node);
+    void KosarajuFindSCCIter(std::vector<std::vector<int>> &transposedGraph, std::vector<bool> &visited, std::vector<int> &component, const int node);
 };
 
 #endif
