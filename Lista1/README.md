@@ -1,5 +1,10 @@
-# Algorytmy-optymalizacji-dyskretnej
-Repozytorium zawiera programy napisane na przedmiot **Algorytmy optymalizacji dyskretnej 2022/2023**
+# Lista 1
+Lista pierwsza zawiera implementację kilku algorytmów grafowych. Są to:
+- DFS,
+- BFS,
+- sortowanie topologiczne,
+- rozkład na silnie spójne składowe (algorytm Kosaraju oraz Tarjana),
+- wykrywanie dwudzielności grafu.
 
 ## Użycie
 
