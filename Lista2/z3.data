@@ -1,0 +1,32 @@
+data;
+
+set Shifts := Shift1 Shitf2 Shift3;
+set Districts := District1 District2 District3;
+
+param MinShifts :=
+    Shift1  10
+    Shitf2  20
+    Shift3  18
+;
+
+param MinDistricts :=
+    District1   10
+    District2   14
+    District3   13
+;
+
+param MinCars :
+            Shift1  Shitf2  Shift3 :=
+District1        2       4       3
+District2        3       6       5
+District3        5       7       6
+;
+
+param MaxCars :
+            Shift1  Shitf2  Shift3 :=
+District1        3       7       5
+District2        5       7      10
+District3        8      12      10
+;
+
+end;
